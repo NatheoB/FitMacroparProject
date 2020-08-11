@@ -1,0 +1,15 @@
+Package: FitMacroparProject
+Type: Package
+Title: Shiny web page to present "Fit macroparasite abundance data" project
+Version: 0.1.0
+Author: BEAUCHAMP Natheo
+Maintainer: BEAUCHAMP Natheo <natheo.beauchamp@agrocampus-ouest.fr>
+Description: This web page contains :
+    - Bibliography
+    - Presentation of Hamelin and Lewis' model
+    - App to fit data
+    - Results of scientific abundance datasets
+    - A project report
+Encoding: UTF-8
+LazyData: false
+RoxygenNote: 7.1.1
