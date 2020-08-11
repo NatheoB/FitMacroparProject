@@ -18,8 +18,8 @@ body <- dashboardBody(
         tabItem(tabName = "biblio",
             htmlOutput("pdfviewerBiblio")
         ),
-        
-        
+
+
         # Hamelin and Lewis' model
         tabItem(tabName = "model",
             fluidRow(
@@ -58,7 +58,7 @@ body <- dashboardBody(
             )
         ),
 
-        
+
         # Fit application
         tabItem(tabName = "app",
             navbarPage(title = "FitMacropar",
@@ -66,7 +66,7 @@ body <- dashboardBody(
                     fluidRow(
                         box(width = 4, title = "Create your dataset...",
                             fluidRow(
-                                column(width = 6, 
+                                column(width = 6,
                                     numericInput(
                                         "dataMaxBurden", "Maximum parasite burden",
                                         value = 0, min = 0
@@ -88,7 +88,7 @@ body <- dashboardBody(
                                          choiceValues = 1:length(data.names),
                                          selected = 5
                             ),
-                            collapsible = TRUE, collapsed = TRUE) 
+                            collapsible = TRUE, collapsed = TRUE)
                     ),
                     fluidRow(
                         box(width = 12,
@@ -141,7 +141,7 @@ body <- dashboardBody(
                             ),
                             actionButton("fit.nb", "Fit to data")
                         ),
-                        box(width = 3, title = "Geom", collapsible = TRUE, collapsed = FALSE, 
+                        box(width = 3, title = "Geom", collapsible = TRUE, collapsed = FALSE,
                             numericInput(
                                 inputId = "pars.geom.M0", label = "M0",
                                 value = 0.5, min = 0, max = 1, step = 0.01
@@ -162,7 +162,7 @@ body <- dashboardBody(
                                 value = 0.5, min = 0, step = 0.01
                             ),
                             br(),
-                            sliderInput("HLnit", "Number of fit iterations", min = 1, max = 10, step = 1, value = 3),
+                            sliderInput("HLnit", "Number of fit iterations", min = 1, max = 500, step = 1, value = 1),
                             helpText("Find the best fit over n fits"),
                             actionButton("fit.HLmodel", "Fit to data")
                         )
@@ -170,10 +170,10 @@ body <- dashboardBody(
                 ),
                 tabPanel(title = "Results",
                     fluidRow(
-                        box(width = 7, title = "Histogram", 
+                        box(width = 7, title = "Histogram",
                             uiOutput("maxK.out"),
                             checkboxGroupInput(
-                                       "hist.models", "Models to show on histrogram", 
+                                       "hist.models", "Models to show on histrogram",
                                        choices = list("Poisson" = 1, "Negative binomial" = 2, "Geom" = 3, "HLmodel" = 4, "Observed" = 5),
                                        selected = c(1, 2, 3, 4, 5),
                                        inline = TRUE
@@ -194,7 +194,7 @@ body <- dashboardBody(
             )
         ),
 
-        
+
         # Results
         tabItem(tabName = "results",
             downloadButton("dlFullResults", "Download results sheet"),
@@ -219,7 +219,7 @@ body <- dashboardBody(
             )
         ),
 
-        
+
         # Article
         tabItem(tabName = "article",
             h1("Introduction"),
@@ -227,8 +227,8 @@ body <- dashboardBody(
             h1("Discussion"),
             h1("References")
         ),
-        
-        
+
+
         # Help
         tabItem(tabName = "help",
             fluidRow(
@@ -236,12 +236,12 @@ body <- dashboardBody(
                 box(title = "Contact",
                     "Shiny app creator : BEAUCHAMP Natheo", br(),
                     "Mail : <natheo.beauchamp@agrocampus-ouest.fr>", br(), br(),
-                    
+
                     "Intership supervisor : HAMELIN Frederic", br(), br(),
-                    
+
                     "Model creators : LEWIS Mark and HAMELIN Frederic"
                 ),
-                    
+
                 # Software and libraries
                 box(title = "Software and libraries",
                     "R studio software", br(),
@@ -252,7 +252,7 @@ body <- dashboardBody(
     )
 )
 
-    
+
 dashboardPage(skin = "blue",
     dashboardHeader(title = "Macroparasites modelling", titleWidth = 300),
     sidebar,
