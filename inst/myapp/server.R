@@ -1,20 +1,20 @@
 shinyServer(function(input, output, session) {
     values <- reactiveValues()
-    
+
     # Sidebar
    observeEvent(input$exitApp, {
        stopApp()
     })
-    
-    
+
+
     # Bibliography
     output$pdfviewerBiblio <- renderText({
         return(paste('<iframe style="height:600px; width:100%" src="',
                      "resources/bibliography.pdf",
                      '"></iframe>', sep = ""))
     })
-    
-    
+
+
     # App
     observeEvent(input$validateMaxBurden, {
         values$createdData <- data.frame(
@@ -22,7 +22,7 @@ shinyServer(function(input, output, session) {
             freq = rep(as.integer(0), input$dataMaxBurden + 1)
         )
     })
-    
+
     output$dlCreatedData <- downloadHandler(
         filename = function() {
             paste(values$data.name(), ".csv", sep = "")
@@ -31,7 +31,7 @@ shinyServer(function(input, output, session) {
             write.csv2(values$createdData, file, row.names = FALSE)
         }
     )
-    
+
     observe({
         if (!is.null(input$dataCreatedInput)) {
             DF <- hot_to_r(input$dataCreatedInput)
@@ -41,11 +41,11 @@ shinyServer(function(input, output, session) {
             } else {
                 DF <- values$createdData
             }
-            
+
         }
         values$createdData <- DF
     })
-    
+
     output$dataCreatedInput <- renderRHandsontable({
         DF <- values$createdData
         if (!is.null(DF)) {
@@ -55,10 +55,10 @@ shinyServer(function(input, output, session) {
                 hot_validate_numeric(cols = 2, min = 0)
         }
     })
-    
+
     values$data.name <- reactive(ifelse(input$dataName == "", "Data", input$dataName))
-    
-    
+
+
         # Chosen dataset
     data.original <- eventReactive(input$submitData, {
         # Create original data
@@ -74,24 +74,24 @@ shinyServer(function(input, output, session) {
         read.csv2(
             paste("www/resources/data/", data.names[[as.numeric(input$dataExampleInput)]], ".csv", sep = ""))
     })
-    
-    
+
+
         #Create a vector with all sampling from data
     data.sampling <- reactive(rep(data.original()$paraPerHost, data.original()$freq))
-    
+
         # Create a vector of frequency
     data.frequency <- reactive(data.original()$freq)
     data.sampleSize <- reactive(sum(data.frequency()))
-    
-    
+
+
     output$dataTitleOutput.overview <- renderUI({
         if (!is.null(data.original()))
             h2(values$data.name())
     })
-    
+
         # Output matrix to show
     matrix.output <- reactive(t(as.matrix(data.original())))
-    
+
     # Table output
     output$table <- renderTable({
         out <- matrix.output()
@@ -104,29 +104,29 @@ shinyServer(function(input, output, session) {
     output$stats <- renderPrint({
         summary(data.sampling())
     })
-    
+
     # Save fits
     output$dataTitleOutput.pars <- renderUI({
         helpText(values$data.name())
     })
-    
+
     observeEvent(input$fit.all, {
         fit.mle.pois <- fitdist(data.sampling(), "pois", method = "mle")
         updateNumericInput(session, "pars.pois.lambda", value = fit.mle.pois$estimate[1][[1]])
-        
+
         fit.mle.nb <- fitdist(data.sampling(), "nbinom", method = "mle")
         updateNumericInput(session, "pars.nb.size", value = fit.mle.nb$estimate[1][[1]])
         updateNumericInput(session, "pars.nb.mu", value = fit.mle.nb$estimate[2][[1]])
-        
-        fit.mle.geom <- optimize(f = NLL.model1, interval = c(0,1), data = data.sampling())
+
+        fit.mle.geom <- optimize(f = NLL.geom, interval = c(0,1), data = data.sampling())
         updateNumericInput(session, "pars.geom.M0", value = fit.mle.geom$minimum)
-        
+
         estimate.HLmodel <- find.estimate.HLmodel(data.sampling(), input$HLnit)
         updateNumericInput(session, "pars.HLmodel.force", value = estimate.HLmodel["force"][[1]])
         updateNumericInput(session, "pars.HLmodel.mu", value = estimate.HLmodel["mu"][[1]])
         updateNumericInput(session, "pars.HLmodel.gamma", value = estimate.HLmodel["gamma"][[1]])
     })
-    
+
     output$dlParams <- downloadHandler(
         filename = function() {
             paste(values$data.name(), ".csv", sep = "")
@@ -135,7 +135,7 @@ shinyServer(function(input, output, session) {
             write.csv2(values$params(), file, row.names = FALSE)
         }
     )
-    
+
     values$params <- reactive({
         df <- data.frame(
             Models = c("Poisson", "NBD", "NBD", "Geom", "HLmodel", "HLmodel", "HLmodel"),
@@ -147,14 +147,14 @@ shinyServer(function(input, output, session) {
         )
         df
     })
-    
+
     # Fit data button
-    
+
     observeEvent(input$fit.pois, {
         fit.mle.pois <- fitdist(data.sampling(), "pois", method = "mle")
         updateNumericInput(session, "pars.pois.lambda", value = fit.mle.pois$estimate[1][[1]])
     })
-    
+
     observeEvent(input$fit.nb, {
         fit.mle.nb <- fitdist(data.sampling(), "nbinom", method = "mle")
         updateNumericInput(session, "pars.nb.size", value = fit.mle.nb$estimate[1][[1]])
@@ -162,10 +162,10 @@ shinyServer(function(input, output, session) {
     })
 
     observeEvent(input$fit.geom, {
-        fit.mle.geom <- optimize(f = NLL.model1, interval = c(0,1), data = data.sampling())
+        fit.mle.geom <- optimize(f = NLL.geom, interval = c(0,1), data = data.sampling())
         updateNumericInput(session, "pars.geom.M0", value = fit.mle.geom$minimum)
     })
-    
+
     observeEvent(input$fit.HLmodel, {
         estimate.HLmodel <- find.estimate.HLmodel(data.sampling(), input$HLnit)
         updateNumericInput(session, "pars.HLmodel.force", value = estimate.HLmodel["force"][[1]])
@@ -183,7 +183,7 @@ shinyServer(function(input, output, session) {
 
     # Reactive discrete probability distribution and reactive frequencies
     khi2 <- reactiveValues()
-    
+
     # Create Poisson data
     dpd.pois <- reactive({
         dpois(
@@ -204,7 +204,7 @@ shinyServer(function(input, output, session) {
         pvalue <- reactive(chisq.calc.pvalue(stat(), df()))
         khi2$pois <- reactive(cbind(stat(), df(), pvalue()))
     })
-    
+
     # Create NBD data
     dpd.nb <- reactive({
         dnbinom(
@@ -218,7 +218,7 @@ shinyServer(function(input, output, session) {
         freq.nb(), gfreq.ind.nb()[1], gfreq.ind.nb()[2]))
     gfreq.data.nb <- reactive(freq.group.distrib(
         data.frequency(), gfreq.ind.nb()[1], gfreq.ind.nb()[2]))
-    
+
     observe({
         stat <- reactive(chisq.calc.statistic(gfreq.nb(), gfreq.data.nb()))
         df <- reactive(length(gfreq.nb()) - 2 - 1)
@@ -239,16 +239,16 @@ shinyServer(function(input, output, session) {
         freq.geom(), gfreq.ind.geom()[1], gfreq.ind.geom()[2]))
     gfreq.data.geom <- reactive(freq.group.distrib(
         data.frequency(), gfreq.ind.geom()[1], gfreq.ind.geom()[2]))
-    
+
     observe({
         stat <- reactive(chisq.calc.statistic(gfreq.geom(), gfreq.data.geom()))
         df <- reactive(length(gfreq.geom()) - 1 - 1)
         pvalue <- reactive(chisq.calc.pvalue(stat(), df()))
         khi2$geom <- reactive(cbind(stat(), df(), pvalue()))
     })
-    
-    
-    
+
+
+
     # Create NBD data
     dpd.HLmodel <- reactive({
         M.HLmodel(
@@ -266,14 +266,14 @@ shinyServer(function(input, output, session) {
         freq.HLmodel(), gfreq.ind.HLmodel()[1], gfreq.ind.HLmodel()[2]))
     gfreq.data.HLmodel <- reactive(freq.group.distrib(
         data.frequency(), gfreq.ind.HLmodel()[1], gfreq.ind.HLmodel()[2]))
-    
+
     observe({
         stat <- reactive(chisq.calc.statistic(gfreq.HLmodel(), gfreq.data.HLmodel()))
         df <- reactive(length(gfreq.HLmodel()) - 3 - 1)
         pvalue <- reactive(chisq.calc.pvalue(stat(), df()))
         khi2$HLmodel <- reactive(cbind(stat(), df(), pvalue()))
     })
-    
+
 
     # Khi2 table
     khi2$data <- reactive(cbind(khi2$pois(), khi2$nb(), khi2$geom(), khi2$HLmodel()))
@@ -289,7 +289,7 @@ shinyServer(function(input, output, session) {
         values$khi2 <- mat
         mat
     }, rownames = TRUE, digits = 5)
-    
+
     output$dlKhi2 <- downloadHandler(
         filename = function() {
             paste(values$data.name(), "_khi2.csv", sep = "")
@@ -298,7 +298,7 @@ shinyServer(function(input, output, session) {
             write.csv2(values$khi2, file, row.names = FALSE)
         }
     )
-    
+
     # Initialize histogram
     observe({
         if (!is.null(input$maxK.in)) {
@@ -350,7 +350,7 @@ shinyServer(function(input, output, session) {
             AIC = values$AIC(),
             AIC.rank = values$AIC.rank(),
             BIC = values$BIC(),
-            BIC.rank = values$BIC.rank(), 
+            BIC.rank = values$BIC.rank(),
             row.names = c("Poisson", "Negative binomial", "Geom", "HLmodel"))
         values$comparison
     }, rownames = TRUE)
@@ -385,7 +385,7 @@ shinyServer(function(input, output, session) {
                       options = list(scrollX = TRUE)
         )
     })
-    
+
     output$dlFullResults <- downloadHandler(
         filename = "all_results.xlsx",
         content = function(file) {
