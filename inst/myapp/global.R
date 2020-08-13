@@ -54,7 +54,7 @@ freq.group.index <- function(distrib.freq) {
       tail.upper.sum <- sum(distrib.freq[1:k.min])
     }
   }
-  
+
   # Search for k max
   k.max = length(distrib.freq)
   if (distrib.freq[k.max] < 5) {
@@ -65,7 +65,7 @@ freq.group.index <- function(distrib.freq) {
       tail.lower.sum <- sum(distrib.freq[k.max:length(distrib.freq)])
     }
   }
-  
+
   return(c(k.min, k.max))
 }
 
@@ -154,16 +154,16 @@ M.HLmodel <- function(x, pars, log = FALSE) {
   # Calculate distribution from k=0 to 2*max_k
   # After, M_k = 0
   pars <- c(pars, K = max(x)*2)
-  
+
   # Init Mk equals to 0 except M0 = 1
   Mini = c(1, rep(0, pars["K"][[1]]))
-  
+
   # Find Mk at equilibrium by solving ode
   preci <- 0.01
   times = seq(0, 10, by = preci)
   M <- deSolve::ode(Mini, times, dM.HLmodel, pars)
   M <- as.vector(M[dim(M)[1], 2:dim(M)[2]])
-  
+
   # If precision is not enough and distribution is not mathematically possible
   # Increase precision and resolve ode
   while (!distrib.verif(M)) {
@@ -172,10 +172,10 @@ M.HLmodel <- function(x, pars, log = FALSE) {
     M <- deSolve::ode(Mini, times, dM.HLmodel, pars)
     M <- as.vector(M[dim(M)[1], 2:dim(M)[2]])
   }
-  
+
   # Tolerance and avoid prob = 0
   M[which(M < 1e-12)] = 1e-12
-  
+
   # Return vector of log (or not) probability density according to the data
   # assuming the model distribution
   if (log) {
@@ -189,7 +189,7 @@ NLL.HLmodel <- function(pars, data) {
   if (!pars.check(pars)) {
     return(Inf)
   }
-  
+
   # Calculate Negative Log-Likelihood of sampling data following the model distribution
   -sum(M.HLmodel(x = data, pars, log = TRUE))
 }
@@ -200,7 +200,7 @@ MLE.HLmodel <- function(data) {
   # Start optim with random initial parameters
   pars <- pars.random(3, 0, 10)
   names(pars) <- c("force", "mu", "gamma")
-  
+
   # Search for the minimum of negative log Likelihood = maximum likelihood ratio
   # Use a tryCatch to avoid script to stop while an error occurs
   pars.mle <- tryCatch(
@@ -220,28 +220,28 @@ MLE.HLmodel <- function(data) {
 # For nit number of random initial parameter
 MLE.all.HLmodel <- function(data, nit) {
   mat <- NULL
-  
+
   withProgress(message = "Fitting HLmodel", min = 0, max = nit, value = 0, {
-  
+
     setProgress(detail = "0%")
-    
+
     mle <- MLE.HLmodel(data)
     if (!anyNA(mle)) {mat <- mle}
     incProgress(1, detail = paste(round(1/nit*100), "%"))
-  
+
     if (nit > 1) {
       for (i in 2:nit){
           # Fitting
           mle <- MLE.HLmodel(data)
           if (!anyNA(mle)) {mat <- c(mat, mle)}
-          
+
           # Update progress bar
           incProgress(1, detail = paste(round(i/nit*100), "%"))
       }
     }
-    
+
   })
-  
+
   mat <- matrix(mat, ncol = 3, byrow = TRUE)
   colnames(mat) <- c("force", "mu", "gamma")
   return(mat)
@@ -253,12 +253,15 @@ MLE.all.HLmodel <- function(data, nit) {
 MLE.best.HLmodel <- function(pars.mat, data) {
   best.pars <- pars.mat[1,]
   best.NLL <- NLL.HLmodel(best.pars, data)
-  for (i in 2:nrow(pars.mat)){
-    try.pars <- pars.mat[i,]
-    try.NLL <- NLL.HLmodel(try.pars, data)
-    if (try.NLL < best.NLL) {
-      best.pars <- try.pars
-      best.NLL <- try.NLL
+
+  if (nrow(pars.mat) > 1) {
+    for (i in 2:nrow(pars.mat)){
+      try.pars <- pars.mat[i,]
+      try.NLL <- NLL.HLmodel(try.pars, data)
+      if (try.NLL < best.NLL) {
+        best.pars <- try.pars
+        best.NLL <- try.NLL
+      }
     }
   }
   return(best.pars)
